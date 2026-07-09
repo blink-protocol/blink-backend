@@ -6,7 +6,10 @@ const config = loadConfig();
 const registry = new LinkRegistry(config.STELLAR_RPC_URL, config.CONTRACT_ID);
 const app = createApp(config, registry);
 
-app.listen(config.PORT, () => {
-  console.log(`Blink API listening on :${config.PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(config.PORT, () => {
+    console.log(`Blink API listening on :${config.PORT}`);
+  });
+}
 
+export default app;
