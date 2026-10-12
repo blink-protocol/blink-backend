@@ -34,3 +34,31 @@ test("rejects malformed aliases before resolving", async () => {
   server.close();
 });
 
+test("rejects unsafe destinations without returning the URL", async () => {
+  const app = createApp(config, {
+    resolve: async () => ({
+      owner: "G".padEnd(56, "A"),
+      destination: "javascript:alert(1)",
+      active: true,
+      created_at: 1n,
+      updated_at: 1n,
+    }),
+  });
+  const server = app.listen(0);
+  const address = server.address();
+  assert(address && typeof address !== "string");
+  const response = await fetch(`http://127.0.0.1:${address.port}/v1/links/stellar`);
+  assert.equal(response.status, 422);
+  const body = await response.json();
+  assert.deepEqual(body, { error: "unsafe_destination" });
+  assert.equal("destination" in body, false);
+  server.close();
+});
+
+test("passphrase mapping covers testnet and public", async () => {
+  const { passphraseForNetwork } = await import("../src/registry.js");
+  const { Networks } = await import("@stellar/stellar-sdk");
+  assert.equal(passphraseForNetwork("testnet"), Networks.TESTNET);
+  assert.equal(passphraseForNetwork("public"), Networks.PUBLIC);
+});
+

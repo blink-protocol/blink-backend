@@ -7,6 +7,7 @@ import {
   rpc,
   scValToNative,
 } from "@stellar/stellar-sdk";
+import type { Config } from "./config.js";
 
 const SIMULATION_SOURCE = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
 
@@ -18,11 +19,30 @@ export type LinkRecord = {
   updated_at: bigint;
 };
 
+export function passphraseForNetwork(network: Config["STELLAR_NETWORK"]): string {
+  switch (network) {
+    case "testnet":
+      return Networks.TESTNET;
+    case "public":
+      return Networks.PUBLIC;
+    default: {
+      const _exhaustive: never = network;
+      throw new Error(`Unsupported STELLAR_NETWORK: ${String(_exhaustive)}`);
+    }
+  }
+}
+
 export class LinkRegistry {
   private readonly server: rpc.Server;
+  private readonly networkPassphrase: string;
 
-  constructor(rpcUrl: string, private readonly contractId: string) {
+  constructor(
+    rpcUrl: string,
+    private readonly contractId: string,
+    network: Config["STELLAR_NETWORK"] = "testnet",
+  ) {
     this.server = new rpc.Server(rpcUrl);
+    this.networkPassphrase = passphraseForNetwork(network);
   }
 
   async resolve(alias: string): Promise<LinkRecord | null> {
@@ -30,7 +50,7 @@ export class LinkRegistry {
     const contract = new Contract(this.contractId);
     const transaction = new TransactionBuilder(account, {
       fee: BASE_FEE,
-      networkPassphrase: Networks.TESTNET,
+      networkPassphrase: this.networkPassphrase,
     })
       .addOperation(contract.call("resolve", nativeToScVal(alias, { type: "string" })))
       .setTimeout(30)
@@ -42,4 +62,3 @@ export class LinkRegistry {
     return scValToNative(simulation.result.retval) as LinkRecord | null;
   }
 }
-

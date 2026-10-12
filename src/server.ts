@@ -3,7 +3,7 @@ import { loadConfig } from "./config.js";
 import { LinkRegistry } from "./registry.js";
 
 const config = loadConfig();
-const registry = new LinkRegistry(config.STELLAR_RPC_URL, config.CONTRACT_ID);
+const registry = new LinkRegistry(config.STELLAR_RPC_URL, config.CONTRACT_ID, config.STELLAR_NETWORK);
 const app = createApp(config, registry);
 
 if (!process.env.VERCEL) {

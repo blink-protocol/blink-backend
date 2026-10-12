@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import type { Config } from "./config.js";
+import { isSafeRedirectDestination } from "./destination-safety.js";
 import type { LinkRecord } from "./registry.js";
 
 type Resolver = { resolve(alias: string): Promise<LinkRecord | null> };
@@ -21,6 +22,9 @@ export function createApp(config: Config, registry: Resolver) {
       }
       const link = await registry.resolve(alias);
       if (!link?.active) return response.status(404).json({ error: "link_not_found" });
+      if (!isSafeRedirectDestination(link.destination)) {
+        return response.status(422).json({ error: "unsafe_destination" });
+      }
       return response.json({
         alias,
         owner: link.owner,
